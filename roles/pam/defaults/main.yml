@@ -1,0 +1,21 @@
+pam__faillock_deny: 5 
+pam__faillock_unlock_time: 0 # or greater then 900 seconds (0 could result denial of service)
+pam__faillock_root_unlock_time: 60 # or remove line
+
+pam_pwquality_difok: 2 # or more
+pam_pwquality_minlen: 14 # or more
+pam_pwquality_minclass: 4
+
+pam_pwquality_dcredit: -1 # 1 must have digit
+pam_pwquality_ucredit: -1 # 1 must have uppercase letter
+pam_pwquality_lcredit: -1 # 1 must have other char
+pam_pwquality_ocredit: -1 # 1 must have lowercase letter
+
+pam_pwquality_maxrepeat: 3 # or less but NOT 0
+pam_pwquality_maxsequence: 3 # or less but NOT 0
+# max sequence, dirtcheck? (does not exist in faillock.conf)
+# enforce root pw_quality 
+
+pam_pwhistory_remember: 24 # number of old passwords to remember
+# enforce for root 
+# pam_pwhistory.so?
