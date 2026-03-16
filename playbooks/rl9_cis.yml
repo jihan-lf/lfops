@@ -12,6 +12,7 @@
 
   roles:
     - role: 'linuxfabrik.lfops.aide'
+    - role: 'linuxfabrik.lfops.pam'
 
 
   post_tasks:

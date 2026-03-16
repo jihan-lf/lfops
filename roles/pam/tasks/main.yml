@@ -1,0 +1,72 @@
+    # CIS_Rocky_Linux_9_Benchmark_v2.0.0 
+- block:
+
+  - name: '5.3.1.1 Ensure latest version of pam is installed'
+    ansible.builtin.package:
+      name: 
+        - 'pam'
+      state: 'latest'
+  
+  tags:
+    - 'pam'
+    - 'pam:install'
+
+
+    # CIS_Rocky_Linux_9_Benchmark_v2.0.0 
+- block:
+
+  - name: '5.3.1.2 Ensure latest version of authselect is installed'
+    ansible.builtin.package:
+      name: 
+        - 'pam'
+      state: 'latest'
+  
+  tags:
+    - 'pam'
+    - 'pam:install_authselect' #? or under pam:install
+
+
+    # CIS_Rocky_Linux_9_Benchmark_v2.0.0 
+- block:
+
+  - name: '5.3.1.3 Ensure latest version of libpwquality is installed'
+    ansible.builtin.package:
+      name: 
+        - 'libpwquality'
+      state: 'latest'
+  
+  tags:
+    - 'pam'
+    - 'pam:install_libpwquality' #? or under pam:install
+
+
+    # CIS_Rocky_Linux_9_Benchmark_v2.0.0  
+- block:
+
+  - name: 'Edit /etc/security/faillock.conf'
+    ansible.builtin.template:
+      src: 'etc/security/faillock.conf.j2'
+      dest: '/etc/security/faillock.conf'
+      owner: 'root'
+      group: 'root'
+      mode: 0o644
+
+  tags:
+    - 'pam'
+    - 'pam:faillock' 
+
+
+    # CIS_Rocky_Linux_9_Benchmark_v2.0.0  
+- block:
+
+  - name: 'Edit /etc/security/pwquality.conf'
+    ansible.builtin.template:
+      src: 'etc/security/pwquality.conf.j2'
+      dest: '/etc/security/pwquality.conf'
+      owner: 'root'
+      group: 'root'
+      mode: 0o644
+
+  tags:
+    - 'pam'
+    - 'pam:pwquality' 
