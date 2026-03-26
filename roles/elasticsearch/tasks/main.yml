@@ -92,7 +92,7 @@
 
   # block
   when:
-    - 'elasticsearch__ca_cert is defined and elasticsearch__ca_cert | length'
+    - 'elasticsearch__ca_cert is defined and elasticsearch__ca_cert | length > 0'
   notify: 'elasticsearch: restart elasticsearch'
   tags:
     - 'elasticsearch'
@@ -100,6 +100,37 @@
 
 
 - block:
+
+  - name: 'ensure  0 <= elasticsearch__cluster_routing_allocation_disk_watermark_low <= 1'
+    ansible.builtin.assert:
+      that: >
+        elasticsearch__cluster_routing_allocation_disk_watermark_low is number and
+        elasticsearch__cluster_routing_allocation_disk_watermark_low >= 0 and
+        elasticsearch__cluster_routing_allocation_disk_watermark_low <= 1
+      fail_msg: 'elasticsearch__cluster_routing_allocation_disk_watermark_low must be a number between 0 and 1'
+
+  - name: 'ensure  0 <= elasticsearch__cluster_routing_allocation_disk_watermark_high <= 1'
+    ansible.builtin.assert:
+      that: >
+        elasticsearch__cluster_routing_allocation_disk_watermark_high is number and
+        elasticsearch__cluster_routing_allocation_disk_watermark_high >= 0 and
+        elasticsearch__cluster_routing_allocation_disk_watermark_high <= 1
+      fail_msg: 'elasticsearch__cluster_routing_allocation_disk_watermark_high must be a number between 0 and 1'
+
+  - name: 'ensure  0 <= elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage <= 1'
+    ansible.builtin.assert:
+      that: >
+        elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage is number and
+        elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage >= 0 and
+        elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage <= 1
+      fail_msg: 'elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage must be a number between 0 and 1'
+
+  - name: 'ensure elasticsearch__cluster_routing_allocation_disk_watermark_low < elasticsearch__cluster_routing_allocation_disk_watermark_high < elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage'
+    ansible.builtin.assert:
+      that: >
+        elasticsearch__cluster_routing_allocation_disk_watermark_low < elasticsearch__cluster_routing_allocation_disk_watermark_high and
+        elasticsearch__cluster_routing_allocation_disk_watermark_high < elasticsearch__cluster_routing_allocation_disk_watermark_flood_stage
+      fail_msg: 'elasticsearch__cluster_routing_allocation_disk_watermark_low must not exceed elasticsearch__cluster_routing_allocation_disk_watermark_high'
 
   - name: 'deploy /etc/elasticsearch/elasticsearch.yml'
     ansible.builtin.template:
@@ -117,6 +148,23 @@
     vars:
       shared__remove_rpmnew_rpmsave_config_file: '/etc/elasticsearch/elasticsearch.yml'
 
+  - name: 'deploy /etc/elasticsearch/log4j2.properties'
+    ansible.builtin.template:
+      src: 'etc/elasticsearch/log4j2.properties.j2'
+      dest: '/etc/elasticsearch/log4j2.properties'
+      owner: 'root'
+      group: 'elasticsearch'
+      mode: 0o660
+      backup: true
+    notify: 'elasticsearch: restart elasticsearch'
+
+  - name: 'Remove rpmnew / rpmsave (and Debian equivalents)'
+    ansible.builtin.include_role:
+      name: 'shared'
+      tasks_from: 'remove-rpmnew-rpmsave.yml'
+    vars:
+      shared__remove_rpmnew_rpmsave_config_file: '/etc/elasticsearch/log4j2.properties'
+
   - name: 'deploy {{ __elasticsearch__sysconfig_file_path }}'
     ansible.builtin.template:
       src: 'etc/sysconfig/elasticsearch.j2'
@@ -133,7 +181,7 @@
       owner: 'root'
       group: 'root'
       mode: 0o644
-    when: 'elasticsearch__discovery_seed_hosts is defined and elasticsearch__discovery_seed_hosts | length'
+    when: 'elasticsearch__discovery_seed_hosts is defined and elasticsearch__discovery_seed_hosts | length > 0'
 
   tags:
     - 'elasticsearch'

@@ -9,7 +9,7 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ item["name"] }}'
       state: 'present' # we only use state present, as other vms could use the network too
     delegate_to: 'localhost'
@@ -25,7 +25,7 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ item["name"] }}--subnet'
       network_name: '{{ item ["name"] }}'
       cidr: '{{ item["cidr"] }}'
@@ -47,7 +47,7 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ infomaniak_vm__name }}--{{ item["name"] }}--port'
       network: '{{ item["name"] }}'
       fixed_ips:
@@ -88,12 +88,12 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ infomaniak_vm__name }}'
       state: 'present'
     delegate_to: 'localhost'
     when:
-      - 'infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length'
+      - 'infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length > 0'
       - 'infomaniak_vm__state != "absent"'
 
   - name: 'Manage the required security group rules for the VM'
@@ -105,7 +105,7 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       security_group: '{{ infomaniak_vm__name }}'
       direction: '{{ item["direction"] | default("ingress") }}'
       protocol: '{{ item["protocol"] | default(omit) }}'
@@ -136,7 +136,7 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       display_name: '{{ infomaniak_vm__name }}--boot'
       image: '{{ infomaniak_vm__image }}'
       bootable: true
@@ -145,7 +145,7 @@
       volume_type: 'CEPH_1_{{ infomaniak_vm__separate_boot_volume_type }}'
     delegate_to: 'localhost'
     when:
-      - 'infomaniak_vm__separate_boot_volume_size is defined and infomaniak_vm__separate_boot_volume_size | string | length'
+      - 'infomaniak_vm__separate_boot_volume_size is defined and infomaniak_vm__separate_boot_volume_size | string | length > 0'
 
   - name: 'Manage the VM at Infomaniak (with separate boot volume)'
     openstack.cloud.server:
@@ -156,19 +156,19 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ infomaniak_vm__name }}'
       key_name: '{{ infomaniak_vm__key_name }}'
       flavor: '{{ infomaniak_vm__flavor }}'
       nics: '{{ infomaniak_vm__nics }}'
       boot_volume: '{{ infomaniak_vm__name }}--boot'
       terminate_volume: true # delete volume when deleting VM
-      security_groups: '{{ (infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length) | ternary(["default", infomaniak_vm__name], ["default"]) }}'
+      security_groups: '{{ (infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length > 0) | ternary(["default", infomaniak_vm__name], ["default"]) }}'
       state: '{{ infomaniak_vm__state }}'
       auto_ip: false # not all VMs need to have a public ip
     delegate_to: 'localhost'
     when:
-      - 'infomaniak_vm__separate_boot_volume_size is defined and infomaniak_vm__separate_boot_volume_size | string | length'
+      - 'infomaniak_vm__separate_boot_volume_size is defined and infomaniak_vm__separate_boot_volume_size | string | length > 0'
 
   - name: 'Manage the VM at Infomaniak (without separate boot volume)'
     openstack.cloud.server:
@@ -179,19 +179,19 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ infomaniak_vm__name }}'
       key_name: '{{ infomaniak_vm__key_name }}'
       image: '{{ infomaniak_vm__image }}'
       flavor: '{{ infomaniak_vm__flavor }}'
       nics: '{{ infomaniak_vm__nics }}'
       terminate_volume: true # delete volume when deleting VM
-      security_groups: '{{ (infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length) | ternary(["default", infomaniak_vm__name], ["default"]) }}'
+      security_groups: '{{ (infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length > 0) | ternary(["default", infomaniak_vm__name], ["default"]) }}'
       state: '{{ infomaniak_vm__state }}'
       auto_ip: false # not all VMs need to have a public ip
     delegate_to: 'localhost'
     when:
-      - 'infomaniak_vm__separate_boot_volume_size is not defined or not infomaniak_vm__separate_boot_volume_size | string | length'
+      - 'infomaniak_vm__separate_boot_volume_size is not defined or not infomaniak_vm__separate_boot_volume_size | string | length > 0'
 
   # Cleanup
   - name: 'Cleanup ports when deleting VM'
@@ -203,7 +203,7 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ infomaniak_vm__name }}--{{ item["name"] }}--port'
       state: 'absent'
     delegate_to: 'localhost'
@@ -221,12 +221,12 @@
         project_id: '{{ infomaniak_vm__api_project_id }}'
         project_name: '{{ infomaniak_vm__api_username }}'
         user_domain_name: 'default'
-      region_name: 'dc3-a'
+      region_name: '{{ infomaniak_vm__region_name }}'
       name: '{{ infomaniak_vm__name }}'
       state: 'absent'
     delegate_to: 'localhost'
     when:
-      - 'infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length'
+      - 'infomaniak_vm__security_group_rules is defined and infomaniak_vm__security_group_rules | length > 0'
       - 'infomaniak_vm__state == "absent"'
 
   tags:

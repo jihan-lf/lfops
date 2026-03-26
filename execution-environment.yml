@@ -1,7 +1,11 @@
 # the public [lfops_ee containers](https://github.com/Linuxfabrik/lfops/pkgs/container/lfops_ee) are built
 # via [github actions](https://github.com/Linuxfabrik/lfops/actions/workflows/lf-build.yml).
-# for testing / troubleshooting, the container can be build with `ansible-builder build --tag lfops_ee:local -vvv` locally.
-# this takes around 3 mins.
+# for testing / troubleshooting, the container can be build with locally (takes around 3 mins):
+# ```bash
+# ansible-galaxy collection build
+# cp --verbose linuxfabrik-lfops-*.tar.gz linuxfabrik-lfops.tar.gz
+# ansible-builder build --tag lfops_ee:local -vvv
+# ```
 
 # https://ansible.readthedocs.io/projects/builder/en/stable/definition/#builder-ee-definition
 version: 3
@@ -24,6 +28,7 @@ dependencies:
     - 'cs' # required for ngine_io.cloudstack
     - 'hcloud' # required for hetzner.hcloud
     - 'jmespath' # required for community.general.json_query
+    - 'mitogen'
     - 'netaddr' # required for ansible.utils.ipaddr
     - 'openstacksdk' # required for openstack.cloud
     - 'passlib' # required for ansible.builtin.password_hash filter
@@ -40,3 +45,7 @@ dependencies:
 additional_build_files:
   - src: 'linuxfabrik-lfops.tar.gz'
     dest: '.'
+
+additional_build_steps:
+  append_final:
+    - 'RUN mkdir -p /opt/mitogen && ln -s /usr/local/lib/python3.11/site-packages/mitogen /opt/mitogen/mitogen && ln -s /usr/local/lib/python3.11/site-packages/ansible_mitogen /opt/mitogen/ansible_mitogen'

@@ -14,6 +14,14 @@
       group: 'logstash'
       mode: 0o750
 
+  - name: 'mkdir -p /etc/logstash/certs'
+    ansible.builtin.file:
+      path: '/etc/logstash/certs'
+      state: 'directory'
+      owner: 'logstash'
+      group: 'logstash'
+      mode: 0o750
+
   - name: 'mkdir -p {{ logstash__path_data }}/tmp'
     ansible.builtin.file:
       path: '{{ logstash__path_data }}/tmp'
@@ -53,14 +61,6 @@
 
 - block:
 
-  - name: 'mkdir -p /etc/logstash/certs'
-    ansible.builtin.file:
-      path: '/etc/logstash/certs'
-      state: 'directory'
-      owner: 'logstash'
-      group: 'logstash'
-      mode: 0o750
-
   - name: 'Deploy /etc/logstash/certs/ca.crt'
     ansible.builtin.copy:
       dest: '/etc/logstash/certs/ca.crt'
@@ -72,7 +72,7 @@
 
   # block
   when:
-    - 'logstash__elasticsearch_ca_cert is defined and logstash__elasticsearch_ca_cert | length'
+    - 'logstash__elasticsearch_ca_cert is defined and logstash__elasticsearch_ca_cert | length > 0'
   tags:
     - 'logstash'
     - 'logstash:configure'
@@ -154,6 +154,44 @@
   tags:
     - 'logstash'
     - 'logstash:pipelines'
+
+
+- block:
+
+  - name: 'mkdir -p /etc/logstash/patterns'
+    ansible.builtin.file:
+      path: '/etc/logstash/patterns'
+      state: 'directory'
+      owner: 'root'
+      group: 'logstash'
+      mode: 0o750
+
+  - name: 'Deploy grok pattern files'
+    ansible.builtin.copy:
+      dest: '/etc/logstash/patterns/{{ item["name"] }}'
+      content: '{{ item["content"] }}'
+      owner: 'root'
+      group: 'logstash'
+      mode: 0o640
+    loop: '{{ logstash__grok_patterns__combined_var }}'
+    loop_control:
+      label: '{{ item["name"] }}'
+    when: 'item["state"] | default("present") != "absent"'
+    notify: 'logstash: validate config and reload logstash'
+
+  - name: 'Remove absent grok pattern files'
+    ansible.builtin.file:
+      path: '/etc/logstash/patterns/{{ item["name"] }}'
+      state: 'absent'
+    loop: '{{ logstash__grok_patterns__combined_var }}'
+    loop_control:
+      label: '{{ item["name"] }}'
+    when: 'item["state"] | default("present") == "absent"'
+    notify: 'logstash: validate config and reload logstash'
+
+  tags:
+    - 'logstash'
+    - 'logstash:grok_patterns'
 
 
 - block:

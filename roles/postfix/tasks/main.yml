@@ -7,7 +7,7 @@
 
 - name: 'Perform platform/version specific tasks'
   ansible.builtin.include_tasks: '{{ __task_file }}'
-  when: '__task_file | length'
+  when: '__task_file | length > 0'
   vars:
     __task_file: '{{ lookup("ansible.builtin.first_found", __first_found_options) }}'
     __first_found_options:
@@ -75,21 +75,21 @@
         mode: 0o600
       register: 'postfix__deploy_sasl_password_result'
 
-    - name: 'postmap /etc/postfix/sasl_passwd'
-      ansible.builtin.command: 'postmap /etc/postfix/sasl_passwd'
+    - name: 'postmap {{ __postfix__map_type }}:/etc/postfix/sasl_passwd'
+      ansible.builtin.command: 'postmap {{ __postfix__map_type }}:/etc/postfix/sasl_passwd'
       when: 'postfix__deploy_sasl_password_result is changed'
       notify: 'postfix: reload postfix'
 
-    - name: 'chmod 0600 /etc/postfix/sasl_passwd.db'
+    - name: 'chmod 0600 /etc/postfix/sasl_passwd.{{ (__postfix__map_type == "lmdb") | ternary("lmdb", "db") }}'
       ansible.builtin.file:
-        path: '/etc/postfix/sasl_passwd.db'
+        path: '/etc/postfix/sasl_passwd.{{ (__postfix__map_type == "lmdb") | ternary("lmdb", "db") }}'
         owner: 'root'
         group: 'root'
         mode: 0o600
       ignore_errors: "{{ ansible_check_mode }}" # ignore errors if `--check` is specified, as the file could not exist yet
 
     when:
-      - 'postfix__relayhost_username is defined and postfix__relayhost_username | length'
+      - 'postfix__relayhost_username is defined and postfix__relayhost_username | length > 0'
 
   - ansible.builtin.include_tasks: 'lookup-table.yml'
     loop: '{{ postfix__lookup_tables__combined_var }}'

@@ -49,7 +49,7 @@
 
 - name: 'Perform platform/version specific tasks'
   ansible.builtin.include_tasks: '{{ __task_file }}'
-  when: '__task_file | length'
+  when: '__task_file | length > 0'
   vars:
     __task_file: '{{ lookup("ansible.builtin.first_found", __first_found_options) }}'
     __first_found_options:
@@ -106,6 +106,10 @@
     - 'firewall:firewalld'
 
 
+# this block intentionally has no "when: firewall__firewall == fwbuilder" condition. run_once picks
+# the first host in the play - if that host does not use fwbuilder, a block-level when would cause
+# the clone to be skipped for all hosts. instead, we extract the repo url across all play hosts
+# (using select to skip undefined and empty values) and use the first truthy match.
 - block:
 
   - name: 'Remove any existing local fwb repo'
@@ -115,11 +119,20 @@
     changed_when: false # not a config change on the server
     check_mode: false # run task even if `--check` is specified
     delegate_to: 'localhost'
-    when: 'firewall__fwbuilder_repo_url is defined and firewall__fwbuilder_repo_url | length'
+    run_once: true
+    vars:
+      __firewall__fwbuilder_repo_url: >-
+        {{ ansible_play_hosts_all
+           | map('extract', hostvars, 'firewall__fwbuilder_repo_url')
+           | select('defined')
+           | select
+           | first
+           | default('') }}
+    when: '__firewall__fwbuilder_repo_url | length > 0'
 
   - name: 'Clone the fwb git repo to localhost'
     ansible.builtin.git:
-      repo: '{{ firewall__fwbuilder_repo_url }}'
+      repo: '{{ __firewall__fwbuilder_repo_url }}'
       dest: '/tmp/ansible.fwb-{{ inventory_dir | basename }}'
       depth: 1
       single_branch: true
@@ -127,7 +140,22 @@
     delegate_to: 'localhost'
     run_once: true
     check_mode: false # run task even if `--check` is specified
-    when: 'firewall__fwbuilder_repo_url is defined and firewall__fwbuilder_repo_url | length'
+    vars:
+      __firewall__fwbuilder_repo_url: >-
+        {{ ansible_play_hosts_all
+           | map('extract', hostvars, 'firewall__fwbuilder_repo_url')
+           | select('defined')
+           | select
+           | first
+           | default('') }}
+    when: '__firewall__fwbuilder_repo_url | length > 0'
+
+  tags:
+    - 'firewall'
+    - 'firewall:deploy_fwb_sh'
+
+
+- block:
 
   - name: 'Deploy /etc/fwb.sh'
     ansible.builtin.copy:
@@ -139,7 +167,7 @@
       mode: 0o500  # no need for others to read/write this file, just u=rx
     register: 'firewall__deploy_fwb_result'
     notify: 'firewall: restart fwb'
-    when: 'firewall__fwbuilder_repo_url is defined and firewall__fwbuilder_repo_url | length'
+    when: 'firewall__fwbuilder_repo_url is defined and firewall__fwbuilder_repo_url | length > 0'
 
   - name: 'Deploy fwbuilder systemd service file'
     ansible.builtin.template:
